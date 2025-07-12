@@ -995,3 +995,212 @@ THÔNG TIN CHUNG:
 2025-07-06 16:45:31,653 - app - INFO - Saved context for session 1e4be0f1-1873-4f77-9ad3-577eb20d7c4b: {'last_activity': datetime.datetime(2025, 7, 6, 16, 45, 31, 551197), 'current_product': 'Citizen Eco-Drive BM8180-03E\n- Mức giá', 'brand': 'Citizen', 'price': '6.200.000', 'features': 'Năng lượng ánh sáng, chống nước 100m, dây vải NATO', 'warranty': '5 năm', 'conversation_context': '3. Citizen Eco-Drive BM8180-03E\n- Mức giá: 6.200.000 VND\n- Đặc điểm: Năng lượng ánh sáng, chống nước 100m, dây vải NATO\n- Bảo hành: 5 năm\nTHÔNG TIN CHUNG:\n- Chính sách đổi trả: 7 ngày không cần lý do\n- Hình thức thanh toán: Tiền mặt, chuyển khoản, trả góp 0%\n- Liên hệ: 1800 1234 (miễn phí) hoặc showroom 123 Đồng Hồ Street, Hà Nội'}
 2025-07-06 16:45:32,987 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
 2025-07-06 16:45:34,711 - app - INFO - Session 1e4be0f1-1873-4f77-9ad3-577eb20d7c4b: Response time 3.16s
+2025-07-07 17:53:56,708 - rag_chain - INFO - Loading data from dongho_data.txt
+2025-07-07 17:53:56,708 - rag_chain - INFO - Loaded 763 characters of data
+2025-07-07 17:53:56,708 - rag_chain - INFO - Split data into 5 documents
+2025-07-07 17:53:56,708 - rag_chain - INFO - Initializing vector database
+2025-07-07 17:53:59,793 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-07-07 17:54:04,160 - rag_chain - INFO - Loading existing vector database
+2025-07-07 17:54:04,452 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-07 17:54:04,646 - rag_chain - INFO - Successfully loaded existing vector database
+2025-07-07 17:54:04,647 - rag_chain - INFO - Initializing LLM
+2025-07-07 17:54:04,666 - rag_chain - INFO - QA chain initialized successfully
+2025-07-07 17:54:04,666 - app - INFO - QA chain initialized successfully
+2025-07-07 17:58:34,616 - app - INFO - Session ID: fa60e38d-c30e-4286-a4ea-6237d57cb757
+2025-07-07 17:58:34,618 - app - INFO - Question: 'Bây giờ là mấy giờ'
+2025-07-07 17:58:34,618 - app - INFO - Current context for session fa60e38d-c30e-4286-a4ea-6237d57cb757: {'last_activity': datetime.datetime(2025, 7, 7, 17, 58, 34, 618468)}
+2025-07-07 17:58:34,618 - app - INFO - Session fa60e38d-c30e-4286-a4ea-6237d57cb757: Bây giờ là mấy giờ
+2025-07-07 17:58:42,364 - app - INFO - Session ID: b6cc6518-3ae0-4c4b-9e55-fa00b3c8ddaa
+2025-07-07 17:58:42,364 - app - INFO - Question: 'Tư vấn cho tôi các sản phẩm của bạn'
+2025-07-07 17:58:42,365 - app - INFO - Current context for session b6cc6518-3ae0-4c4b-9e55-fa00b3c8ddaa: {'last_activity': datetime.datetime(2025, 7, 7, 17, 58, 42, 365026)}
+2025-07-07 17:58:42,365 - app - INFO - Session b6cc6518-3ae0-4c4b-9e55-fa00b3c8ddaa: Tư vấn cho tôi các sản phẩm của bạn
+2025-07-07 17:58:42,365 - app - INFO - Follow-up check - Question: 'tư vấn cho tôi các sản phẩm của bạn', Current product: None
+2025-07-07 17:58:42,365 - app - INFO - No current product or conversation context found
+2025-07-07 17:58:42,401 - app - INFO - Question: 'Tư vấn cho tôi các sản phẩm của bạn'
+2025-07-07 17:58:42,401 - app - INFO - Found 0 relevant docs
+2025-07-07 17:58:42,401 - app - INFO - Context: ...
+2025-07-07 17:58:42,401 - app - INFO - Enhanced context: ...
+2025-07-07 17:58:42,401 - app - INFO - Saved context for session b6cc6518-3ae0-4c4b-9e55-fa00b3c8ddaa: {'last_activity': datetime.datetime(2025, 7, 7, 17, 58, 42, 365026)}
+2025-07-07 17:58:50,304 - app - INFO - Session ID: a4095283-5ff2-42ef-8c3e-737cc6a5e72e
+2025-07-07 17:58:50,304 - app - INFO - Question: 'Tôi đang quan tâm đến dòng Casio'
+2025-07-07 17:58:50,304 - app - INFO - Current context for session a4095283-5ff2-42ef-8c3e-737cc6a5e72e: {'last_activity': datetime.datetime(2025, 7, 7, 17, 58, 50, 304229)}
+2025-07-07 17:58:50,304 - app - INFO - Session a4095283-5ff2-42ef-8c3e-737cc6a5e72e: Tôi đang quan tâm đến dòng Casio
+2025-07-07 17:58:50,304 - app - INFO - Follow-up check - Question: 'tôi đang quan tâm đến dòng casio', Current product: None
+2025-07-07 17:58:50,304 - app - INFO - No current product or conversation context found
+2025-07-07 17:58:50,312 - app - INFO - Question: 'Tôi đang quan tâm đến dòng Casio'
+2025-07-07 17:58:50,312 - app - INFO - Found 1 relevant docs
+2025-07-07 17:58:50,312 - app - INFO - Context: 1. Casio MTP-V002L-1B3UDF
+- Mức giá: 1.200.000 VND
+- Đặc điểm: Chống nước 50m, dây da màu đen, mặt số 38mm
+- Bảo hành: 2 năm chính hãng...
+2025-07-07 17:58:50,312 - app - INFO - Enhanced context: 1. Casio MTP-V002L-1B3UDF
+- Mức giá: 1.200.000 VND
+- Đặc điểm: Chống nước 50m, dây da màu đen, mặt số 38mm
+- Bảo hành: 2 năm chính hãng...
+2025-07-07 17:58:50,312 - app - INFO - Updated context with product info: {'product_name': 'Casio MTP-V002L-1B3UDF\n- Mức giá', 'price': '1.200.000', 'features': 'Chống nước 50m, dây da màu đen, mặt số 38mm', 'brand': 'Casio', 'warranty': '2 năm chính hãng'}
+2025-07-07 17:58:50,312 - app - INFO - Saved context for session a4095283-5ff2-42ef-8c3e-737cc6a5e72e: {'last_activity': datetime.datetime(2025, 7, 7, 17, 58, 50, 304229), 'current_product': 'Casio MTP-V002L-1B3UDF\n- Mức giá', 'brand': 'Casio', 'price': '1.200.000', 'features': 'Chống nước 50m, dây da màu đen, mặt số 38mm', 'warranty': '2 năm chính hãng', 'conversation_context': '1. Casio MTP-V002L-1B3UDF\n- Mức giá: 1.200.000 VND\n- Đặc điểm: Chống nước 50m, dây da màu đen, mặt số 38mm\n- Bảo hành: 2 năm chính hãng'}
+2025-07-07 17:58:59,041 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-07-07 17:59:02,114 - app - INFO - Session a4095283-5ff2-42ef-8c3e-737cc6a5e72e: Response time 11.81s
+2025-07-07 17:59:19,381 - app - INFO - Session ID: d15d04d0-08f0-4129-88b4-81fa83fab2c4
+2025-07-07 17:59:19,381 - app - INFO - Question: 'Cho tôi biết về chính sách bảo hành chung'
+2025-07-07 17:59:19,382 - app - INFO - Current context for session d15d04d0-08f0-4129-88b4-81fa83fab2c4: {'last_activity': datetime.datetime(2025, 7, 7, 17, 59, 19, 382400)}
+2025-07-07 17:59:19,382 - app - INFO - Session d15d04d0-08f0-4129-88b4-81fa83fab2c4: Cho tôi biết về chính sách bảo hành chung
+2025-07-07 17:59:19,382 - app - INFO - Follow-up check - Question: 'cho tôi biết về chính sách bảo hành chung', Current product: None
+2025-07-07 17:59:19,382 - app - INFO - No current product or conversation context found
+2025-07-07 17:59:19,439 - app - INFO - Question: 'Cho tôi biết về chính sách bảo hành chung'
+2025-07-07 17:59:19,439 - app - INFO - Found 0 relevant docs
+2025-07-07 17:59:19,439 - app - INFO - Context: ...
+2025-07-07 17:59:19,439 - app - INFO - Enhanced context: ...
+2025-07-07 17:59:19,439 - app - INFO - Saved context for session d15d04d0-08f0-4129-88b4-81fa83fab2c4: {'last_activity': datetime.datetime(2025, 7, 7, 17, 59, 19, 382400)}
+2025-07-07 17:59:40,050 - app - INFO - Session ID: 49c4d99f-309e-4e90-875d-2456b8799d2e
+2025-07-07 17:59:40,051 - app - INFO - Question: 'Cho tôi biết về chính sách đổi trả'
+2025-07-07 17:59:40,051 - app - INFO - Current context for session 49c4d99f-309e-4e90-875d-2456b8799d2e: {'last_activity': datetime.datetime(2025, 7, 7, 17, 59, 40, 51544)}
+2025-07-07 17:59:40,051 - app - INFO - Session 49c4d99f-309e-4e90-875d-2456b8799d2e: Cho tôi biết về chính sách đổi trả
+2025-07-07 17:59:40,051 - app - INFO - Follow-up check - Question: 'cho tôi biết về chính sách đổi trả', Current product: None
+2025-07-07 17:59:40,051 - app - INFO - No current product or conversation context found
+2025-07-07 17:59:40,085 - app - INFO - Question: 'Cho tôi biết về chính sách đổi trả'
+2025-07-07 17:59:40,086 - app - INFO - Found 1 relevant docs
+2025-07-07 17:59:40,086 - app - INFO - Context: THÔNG TIN CHUNG:
+- Chính sách đổi trả: 7 ngày không cần lý do
+- Hình thức thanh toán: Tiền mặt, chuyển khoản, trả góp 0%
+- Liên hệ: 1800 1234 (miễn phí) hoặc showroom 123 Đồng Hồ Street, Hà Nội...
+2025-07-07 17:59:40,086 - app - INFO - Enhanced context: THÔNG TIN CHUNG:
+- Chính sách đổi trả: 7 ngày không cần lý do
+- Hình thức thanh toán: Tiền mặt, chuyển khoản, trả góp 0%
+- Liên hệ: 1800 1234 (miễn phí) hoặc showroom 123 Đồng Hồ Street, Hà Nội...
+2025-07-07 17:59:40,087 - app - INFO - Saved context for session 49c4d99f-309e-4e90-875d-2456b8799d2e: {'last_activity': datetime.datetime(2025, 7, 7, 17, 59, 40, 51544)}
+2025-07-07 17:59:41,035 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-07-07 17:59:44,730 - app - INFO - Session 49c4d99f-309e-4e90-875d-2456b8799d2e: Response time 4.68s
+2025-07-08 18:16:13,217 - rag_chain - INFO - Loading data from dongho_data.txt
+2025-07-08 18:16:13,218 - rag_chain - INFO - Loaded 763 characters of data
+2025-07-08 18:16:13,218 - rag_chain - INFO - Split data into 5 documents
+2025-07-08 18:16:13,218 - rag_chain - INFO - Initializing vector database
+2025-07-08 18:16:16,285 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-07-08 18:16:20,667 - rag_chain - INFO - Loading existing vector database
+2025-07-08 18:16:20,945 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-08 18:16:21,130 - rag_chain - INFO - Successfully loaded existing vector database
+2025-07-08 18:16:21,131 - rag_chain - INFO - Initializing LLM
+2025-07-08 18:16:21,151 - rag_chain - INFO - QA chain initialized successfully
+2025-07-08 18:16:21,151 - app - INFO - QA chain initialized successfully
+2025-07-08 18:21:43,254 - rag_chain - INFO - Loading data from dongho_data.txt
+2025-07-08 18:21:43,255 - rag_chain - INFO - Loaded 763 characters of data
+2025-07-08 18:21:43,255 - rag_chain - INFO - Split data into 5 documents
+2025-07-08 18:21:43,255 - rag_chain - INFO - Initializing vector database
+2025-07-08 18:21:45,577 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-07-08 18:21:49,374 - rag_chain - INFO - Creating new vector database
+2025-07-08 18:21:49,580 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-08 18:21:49,800 - rag_chain - INFO - Initializing LLM
+2025-07-08 18:21:49,819 - rag_chain - INFO - QA chain initialized successfully
+2025-07-08 18:21:49,819 - app - INFO - QA chain initialized successfully
+2025-07-08 18:26:01,703 - rag_chain - INFO - Loading data from dongho_data.txt
+2025-07-08 18:26:01,704 - rag_chain - INFO - Loaded 763 characters of data
+2025-07-08 18:26:01,704 - rag_chain - INFO - Split data into 5 documents
+2025-07-08 18:26:01,704 - rag_chain - INFO - Initializing vector database
+2025-07-08 18:26:03,743 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-07-08 18:26:07,528 - rag_chain - INFO - Loading existing vector database
+2025-07-08 18:26:07,729 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-07-08 18:26:07,780 - rag_chain - INFO - Successfully loaded existing vector database
+2025-07-08 18:26:07,780 - rag_chain - INFO - Initializing LLM
+2025-07-08 18:26:07,799 - rag_chain - INFO - QA chain initialized successfully
+2025-07-08 18:26:07,799 - app - INFO - QA chain initialized successfully
+2025-07-08 18:28:49,553 - app - INFO - Session ID: 0c187f72-fd12-44ac-87c3-53c7403688d1
+2025-07-08 18:28:49,554 - app - INFO - Question: 'Tôi cần tư vấn'
+2025-07-08 18:28:49,554 - app - INFO - Current context for session 0c187f72-fd12-44ac-87c3-53c7403688d1: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 49, 554691)}
+2025-07-08 18:28:49,554 - app - INFO - Session 0c187f72-fd12-44ac-87c3-53c7403688d1: Tôi cần tư vấn
+2025-07-08 18:28:49,554 - app - INFO - Follow-up check - Question: 'tôi cần tư vấn', Current product: None
+2025-07-08 18:28:49,554 - app - INFO - No current product or conversation context found
+2025-07-08 18:28:49,577 - app - INFO - Question: 'Tôi cần tư vấn'
+2025-07-08 18:28:49,577 - app - INFO - Found 0 relevant docs
+2025-07-08 18:28:49,577 - app - INFO - Context: ...
+2025-07-08 18:28:49,577 - app - INFO - Enhanced context: ...
+2025-07-08 18:28:49,577 - app - INFO - Saved context for session 0c187f72-fd12-44ac-87c3-53c7403688d1: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 49, 554691)}
+2025-07-08 18:28:52,566 - app - INFO - Session ID: 3c0ae802-88ee-449f-9b0d-6042a2c322d7
+2025-07-08 18:28:52,567 - app - INFO - Question: 'Casio'
+2025-07-08 18:28:52,567 - app - INFO - Current context for session 3c0ae802-88ee-449f-9b0d-6042a2c322d7: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 52, 567370)}
+2025-07-08 18:28:52,567 - app - INFO - Session 3c0ae802-88ee-449f-9b0d-6042a2c322d7: Casio
+2025-07-08 18:28:52,567 - app - INFO - Follow-up check - Question: 'casio', Current product: None
+2025-07-08 18:28:52,567 - app - INFO - No current product or conversation context found
+2025-07-08 18:28:52,597 - app - INFO - Question: 'Casio'
+2025-07-08 18:28:52,597 - app - INFO - Found 0 relevant docs
+2025-07-08 18:28:52,597 - app - INFO - Context: ...
+2025-07-08 18:28:52,598 - app - INFO - Enhanced context: ...
+2025-07-08 18:28:52,598 - app - INFO - Saved context for session 3c0ae802-88ee-449f-9b0d-6042a2c322d7: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 52, 567370)}
+2025-07-08 18:28:59,454 - app - INFO - Session ID: 1e81a450-a3d5-45c9-965e-7c8e8c6b6acf
+2025-07-08 18:28:59,454 - app - INFO - Question: 'Tôi quan tâm dòng Casio'
+2025-07-08 18:28:59,454 - app - INFO - Current context for session 1e81a450-a3d5-45c9-965e-7c8e8c6b6acf: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 59, 454720)}
+2025-07-08 18:28:59,454 - app - INFO - Session 1e81a450-a3d5-45c9-965e-7c8e8c6b6acf: Tôi quan tâm dòng Casio
+2025-07-08 18:28:59,454 - app - INFO - Follow-up check - Question: 'tôi quan tâm dòng casio', Current product: None
+2025-07-08 18:28:59,454 - app - INFO - No current product or conversation context found
+2025-07-08 18:28:59,482 - app - INFO - Question: 'Tôi quan tâm dòng Casio'
+2025-07-08 18:28:59,482 - app - INFO - Found 0 relevant docs
+2025-07-08 18:28:59,482 - app - INFO - Context: ...
+2025-07-08 18:28:59,482 - app - INFO - Enhanced context: ...
+2025-07-08 18:28:59,482 - app - INFO - Saved context for session 1e81a450-a3d5-45c9-965e-7c8e8c6b6acf: {'last_activity': datetime.datetime(2025, 7, 8, 18, 28, 59, 454720)}
+2025-07-08 18:29:10,211 - app - INFO - Session ID: 429e5227-8344-43c8-b94b-8d397da0129b
+2025-07-08 18:29:10,211 - app - INFO - Question: 'Tôi quan tâm dòng sản phẩm Casio'
+2025-07-08 18:29:10,212 - app - INFO - Current context for session 429e5227-8344-43c8-b94b-8d397da0129b: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 10, 211990)}
+2025-07-08 18:29:10,212 - app - INFO - Session 429e5227-8344-43c8-b94b-8d397da0129b: Tôi quan tâm dòng sản phẩm Casio
+2025-07-08 18:29:10,212 - app - INFO - Follow-up check - Question: 'tôi quan tâm dòng sản phẩm casio', Current product: None
+2025-07-08 18:29:10,212 - app - INFO - No current product or conversation context found
+2025-07-08 18:29:10,243 - app - INFO - Question: 'Tôi quan tâm dòng sản phẩm Casio'
+2025-07-08 18:29:10,244 - app - INFO - Found 0 relevant docs
+2025-07-08 18:29:10,244 - app - INFO - Context: ...
+2025-07-08 18:29:10,244 - app - INFO - Enhanced context: ...
+2025-07-08 18:29:10,244 - app - INFO - Saved context for session 429e5227-8344-43c8-b94b-8d397da0129b: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 10, 211990)}
+2025-07-08 18:29:16,568 - app - INFO - Session ID: 330fb267-ed30-4ea6-b66b-7802951018f8
+2025-07-08 18:29:16,568 - app - INFO - Question: 'Tôi quan tâm dòng Casio'
+2025-07-08 18:29:16,568 - app - INFO - Current context for session 330fb267-ed30-4ea6-b66b-7802951018f8: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 16, 568554)}
+2025-07-08 18:29:16,568 - app - INFO - Session 330fb267-ed30-4ea6-b66b-7802951018f8: Tôi quan tâm dòng Casio
+2025-07-08 18:29:16,568 - app - INFO - Follow-up check - Question: 'tôi quan tâm dòng casio', Current product: None
+2025-07-08 18:29:16,568 - app - INFO - No current product or conversation context found
+2025-07-08 18:29:16,597 - app - INFO - Question: 'Tôi quan tâm dòng Casio'
+2025-07-08 18:29:16,597 - app - INFO - Found 0 relevant docs
+2025-07-08 18:29:16,597 - app - INFO - Context: ...
+2025-07-08 18:29:16,597 - app - INFO - Enhanced context: ...
+2025-07-08 18:29:16,597 - app - INFO - Saved context for session 330fb267-ed30-4ea6-b66b-7802951018f8: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 16, 568554)}
+2025-07-08 18:29:21,835 - app - INFO - Session ID: 65b9284c-e0f4-45a1-ab1b-0dc3708fe20d
+2025-07-08 18:29:21,836 - app - INFO - Question: 'casio'
+2025-07-08 18:29:21,836 - app - INFO - Current context for session 65b9284c-e0f4-45a1-ab1b-0dc3708fe20d: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 21, 836115)}
+2025-07-08 18:29:21,836 - app - INFO - Session 65b9284c-e0f4-45a1-ab1b-0dc3708fe20d: casio
+2025-07-08 18:29:21,836 - app - INFO - Follow-up check - Question: 'casio', Current product: None
+2025-07-08 18:29:21,836 - app - INFO - No current product or conversation context found
+2025-07-08 18:29:21,862 - app - INFO - Question: 'casio'
+2025-07-08 18:29:21,862 - app - INFO - Found 0 relevant docs
+2025-07-08 18:29:21,862 - app - INFO - Context: ...
+2025-07-08 18:29:21,862 - app - INFO - Enhanced context: ...
+2025-07-08 18:29:21,862 - app - INFO - Saved context for session 65b9284c-e0f4-45a1-ab1b-0dc3708fe20d: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 21, 836115)}
+2025-07-08 18:29:23,259 - app - INFO - Session ID: 2f7bef58-1bb9-41d5-8070-d95bfdf80e71
+2025-07-08 18:29:23,259 - app - INFO - Question: 'a'
+2025-07-08 18:29:23,259 - app - INFO - Current context for session 2f7bef58-1bb9-41d5-8070-d95bfdf80e71: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 23, 259351)}
+2025-07-08 18:29:23,259 - app - INFO - Session 2f7bef58-1bb9-41d5-8070-d95bfdf80e71: a
+2025-07-08 18:29:23,758 - app - INFO - Session ID: 69442733-6050-428f-a275-e06400ca88a4
+2025-07-08 18:29:23,758 - app - INFO - Question: 'a'
+2025-07-08 18:29:23,758 - app - INFO - Current context for session 69442733-6050-428f-a275-e06400ca88a4: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 23, 758459)}
+2025-07-08 18:29:23,758 - app - INFO - Session 69442733-6050-428f-a275-e06400ca88a4: a
+2025-07-08 18:29:23,989 - app - INFO - Session ID: e1b2131d-1770-4393-be72-bed9b74151dd
+2025-07-08 18:29:23,989 - app - INFO - Question: 'a'
+2025-07-08 18:29:23,989 - app - INFO - Current context for session e1b2131d-1770-4393-be72-bed9b74151dd: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 23, 989425)}
+2025-07-08 18:29:23,989 - app - INFO - Session e1b2131d-1770-4393-be72-bed9b74151dd: a
+2025-07-08 18:29:24,200 - app - INFO - Session ID: f7bbf89c-bc91-4ca1-9d27-091d4c0640a7
+2025-07-08 18:29:24,201 - app - INFO - Question: 'a'
+2025-07-08 18:29:24,201 - app - INFO - Current context for session f7bbf89c-bc91-4ca1-9d27-091d4c0640a7: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 24, 201269)}
+2025-07-08 18:29:24,201 - app - INFO - Session f7bbf89c-bc91-4ca1-9d27-091d4c0640a7: a
+2025-07-08 18:29:24,438 - app - INFO - Session ID: 8f729c81-44cd-43c0-825c-bec33bb0e4ed
+2025-07-08 18:29:24,439 - app - INFO - Question: 'a'
+2025-07-08 18:29:24,439 - app - INFO - Current context for session 8f729c81-44cd-43c0-825c-bec33bb0e4ed: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 24, 439275)}
+2025-07-08 18:29:24,439 - app - INFO - Session 8f729c81-44cd-43c0-825c-bec33bb0e4ed: a
+2025-07-08 18:29:24,500 - app - INFO - Session ID: 2807facf-a218-47f3-9bbb-c96edbddcd98
+2025-07-08 18:29:24,500 - app - INFO - Question: 'a'
+2025-07-08 18:29:24,500 - app - INFO - Current context for session 2807facf-a218-47f3-9bbb-c96edbddcd98: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 24, 500453)}
+2025-07-08 18:29:24,500 - app - INFO - Session 2807facf-a218-47f3-9bbb-c96edbddcd98: a
+2025-07-08 18:29:28,590 - app - INFO - Session ID: 0963c7ab-400b-4450-b354-d76669e82851
+2025-07-08 18:29:28,590 - app - INFO - Question: 'casio'
+2025-07-08 18:29:28,590 - app - INFO - Current context for session 0963c7ab-400b-4450-b354-d76669e82851: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 28, 590778)}
+2025-07-08 18:29:28,590 - app - INFO - Session 0963c7ab-400b-4450-b354-d76669e82851: casio
+2025-07-08 18:29:28,590 - app - INFO - Follow-up check - Question: 'casio', Current product: None
+2025-07-08 18:29:28,590 - app - INFO - No current product or conversation context found
+2025-07-08 18:29:28,617 - app - INFO - Question: 'casio'
+2025-07-08 18:29:28,617 - app - INFO - Found 0 relevant docs
+2025-07-08 18:29:28,617 - app - INFO - Context: ...
+2025-07-08 18:29:28,617 - app - INFO - Enhanced context: ...
+2025-07-08 18:29:28,617 - app - INFO - Saved context for session 0963c7ab-400b-4450-b354-d76669e82851: {'last_activity': datetime.datetime(2025, 7, 8, 18, 29, 28, 590778)}
