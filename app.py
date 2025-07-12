@@ -59,7 +59,7 @@ conversation_history: Dict[str, List[Dict]] = {}
 # Cấu hình CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8080").split(","),
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8001").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
