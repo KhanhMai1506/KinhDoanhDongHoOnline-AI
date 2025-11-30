@@ -1,6 +1,8 @@
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import CSVLoader
+from langchain_core.documents import Document
+import csv
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
 import re
@@ -15,32 +17,76 @@ logger = logging.getLogger(__name__)
 def create_qa_chain():
     """Tạo QA chain với cải tiến toàn diện"""
     try:
-        # 1. Load dữ liệu từ file
-        logger.info("Loading data from dongho_data.txt")
-        loader = TextLoader("Data/dongho_data.txt", encoding='utf-8')
-        raw_text = loader.load()[0].page_content
-        logger.info(f"Loaded {len(raw_text)} characters of data")
-
-        # 2. Tách từng sản phẩm thành 1 document, và 1 document cho thông tin chung
+        # 1. Load dữ liệu từ file CSV và xử lý metadata
+        logger.info("Loading data from Data_DongHo.csv with metadata extraction")
         product_docs = []
-        # Tìm vị trí bắt đầu của từng sản phẩm
-        product_splits = [m.start() for m in re.finditer(r"^\d+\. ", raw_text, re.MULTILINE)]
-        product_splits.append(raw_text.find("THÔNG TIN CHUNG:"))
-        product_splits = [i for i in product_splits if i != -1]
-        product_splits = sorted(product_splits)
+        
+        with open("Data/Data_DongHo.csv", newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile, delimiter=';')
+            for row in reader:
+                # Xử lý giá tiền (14.780.000 -> 14780000)
+                raw_price = row.get('Giá bán', '0')
+                try:
+                    price_value = int(raw_price.replace('.', '').replace(',', '').strip()) if raw_price and raw_price != 'NULL' else 0
+                except ValueError:
+                    price_value = 0
+                
+                # Xử lý giới tính
+                category = row.get('Loại danh mục', '').lower()
+                gender = 'unknown'
+                if 'nam' in category:
+                    gender = 'nam'
+                elif 'nữ' in category:
+                    gender = 'nu'
+                
+                # Xử lý số lượng tồn kho
+                try:
+                    stock = int(row.get('Số lượng', '0'))
+                except ValueError:
+                    stock = 0
 
-        for i in range(len(product_splits) - 1):
-            chunk = raw_text[product_splits[i]:product_splits[i + 1]].strip()
-            if chunk:
-                product_docs.append(chunk)
+                # Xử lý thông tin khác (Phong cách, Mục đích)
+                other_info = row.get('Thông tin khác', '').lower()
+                style = []
+                if 'thể thao' in other_info: style.append('the_thao')
+                if 'cổ điển' in other_info or 'classic' in other_info: style.append('co_dien')
+                if 'sang trọng' in other_info: style.append('sang_trong')
+                if 'tối giản' in other_info: style.append('toi_gian')
+                
+                purpose = []
+                if 'đi làm' in other_info or 'văn phòng' in other_info: purpose.append('di_lam')
+                if 'đi học' in other_info: purpose.append('di_hoc')
+                if 'đi chơi' in other_info: purpose.append('di_choi')
+                if 'đi tiệc' in other_info: purpose.append('di_tiec')
 
-        # Thêm thông tin chung
-        chung_idx = raw_text.find("THÔNG TIN CHUNG:")
-        if chung_idx != -1:
-            chung_doc = raw_text[chung_idx:].strip()
-            product_docs.append(chung_doc)
+                # Xử lý thông số kỹ thuật (Chất liệu dây, Size)
+                specs = row.get('Thông số kỹ thuật', '').lower()
+                strap_material = 'unknown'
+                if 'dây da' in specs: strap_material = 'day_da'
+                elif 'kim loại' in specs or 'thép' in specs: strap_material = 'day_kim_loai'
+                elif 'vải' in specs: strap_material = 'day_vai'
+                elif 'nhựa' in specs or 'cao su' in specs: strap_material = 'day_nhua'
 
-        logger.info(f"Split data into {len(product_docs)} documents")
+                # Tạo content cho document
+                content = "\n".join([f"{k}: {v}" for k, v in row.items() if v and v != 'NULL'])
+                
+                # Tạo metadata phong phú hơn
+                metadata = {
+                    "source": "Data/Data_DongHo.csv",
+                    "row": row.get('STT', 0),
+                    "price": price_value,
+                    "gender": gender,
+                    "brand": row.get('Thương hiệu', '').lower(),
+                    "name": row.get('Tên sản phẩm', ''),
+                    "stock": stock,
+                    "style": " ".join(style), # Chroma không hỗ trợ list trong filter tốt, dùng string space-separated
+                    "purpose": " ".join(purpose),
+                    "strap_material": strap_material
+                }
+                
+                product_docs.append(Document(page_content=content, metadata=metadata))
+                
+        logger.info(f"Loaded {len(product_docs)} documents with metadata")
 
         # 3. Tạo vector database
         logger.info("Initializing vector database")
@@ -64,14 +110,14 @@ def create_qa_chain():
             except Exception as e:
                 logger.warning(f"Failed to load existing vector database: {e}")
                 logger.info("Creating new vector database")
-                vectordb = Chroma.from_texts(
+                vectordb = Chroma.from_documents(
                     product_docs,
                     embedding,
                     persist_directory=persist_directory
                 )
         else:
             logger.info("Creating new vector database")
-            vectordb = Chroma.from_texts(
+            vectordb = Chroma.from_documents(
                 product_docs,
                 embedding,
                 persist_directory=persist_directory
@@ -81,44 +127,59 @@ def create_qa_chain():
         template = '''[INST]
 Bạn là trợ lý tư vấn đồng hồ chuyên nghiệp.
 MỤC TIÊU: Trả lời CỰC KỲ NGẮN GỌN, SÚC TÍCH và ĐI THẲNG VÀO VẤN ĐỀ.
+NGÔN NGỮ: BẮT BUỘC TRẢ LỜI 100% BẰNG TIẾNG VIỆT. KHÔNG DÙNG TIẾNG ANH.
 
 QUY TẮC CỐT LÕI:
 1. KHÔNG chào hỏi rườm rà.
 2. KHÔNG lặp lại câu hỏi.
-3. Nếu liệt kê sản phẩm: Tên + Giá + 1 đặc điểm nổi bật.
+3. KHÔNG DỊCH thông tin từ Context sang tiếng Anh. Giữ nguyên văn tiếng Việt trong Context.
+4. Nếu liệt kê sản phẩm, BẮT BUỘC dùng định dạng sau cho từng dòng:
+   - [Tên sản phẩm]: [Giá tiền] - [Đặc điểm nổi bật (Tiếng Việt)]
 
 QUY TẮC TRẢ LỜI CÂU HỎI CỤ THỂ (ƯU TIÊN CAO NHẤT):
-- Nếu hỏi GIÁ của 1 sản phẩm cụ thể -> CHỈ trả lời giá tiền.
-- Nếu hỏi ĐẶC ĐIỂM/TÍNH NĂNG -> CHỈ liệt kê các đặc điểm.
-- Nếu hỏi BẢO HÀNH -> CHỈ trả lời thông tin bảo hành.
-- KHÔNG cung cấp thông tin thừa (Ví dụ: Hỏi giá thì KHÔNG nói về chống nước).
+- Nếu hỏi GIÁ -> CHỈ trả lời giá tiền (Ví dụ: 1.500.000 VND). Giá đã bao gồm VAT.
+- Nếu hỏi CÒN HÀNG KHÔNG -> Kiểm tra "Số lượng". Nếu > 0 trả lời "Còn hàng", ngược lại "Hết hàng".
+- Nếu hỏi ĐẶC ĐIỂM/TÍNH NĂNG -> Sử dụng thông tin từ "Thông số kỹ thuật" hoặc "Mô tả".
+- Nếu hỏi SIZE/KÍCH THƯỚC -> Tìm thông tin "Size mặt" trong "Thông số kỹ thuật".
+- Nếu hỏi CHẤT LIỆU DÂY/KÍNH -> Tìm trong "Thông số kỹ thuật".
+- Nếu hỏi BẢO HÀNH -> Sử dụng thông tin từ "Bảo hành".
+- Nếu hỏi THANH TOÁN -> Sử dụng thông tin từ "Phương thức thanh toán".
+- Nếu hỏi ĐỔI TRẢ -> Sử dụng thông tin từ "Điều kiện đổi trả".
+- Nếu hỏi Giao Hàng -> Sử dụng thông tin từ "Giao hàng".
+- KHÔNG cung cấp thông tin thừa.
 
 VÍ DỤ CHUẨN:
 Q: Casio MTP-V002L giá bao nhiêu?
-A: 1.200.000 VND.
+A: 1.200.000 VND (Đã gồm VAT).
 
-Q: Seiko 5 Sports có chống nước không?
-A: Có, chống nước 100m.
+Q: Mẫu này còn hàng không?
+A: Còn hàng (Số lượng: 45).
+
+Q: Size mặt bao nhiêu?
+A: 40mm.
+
+Q: Liệt kê các mẫu đồng hồ Casio?
+A: Dưới đây là các mẫu Casio nổi bật:
+1. Casio MTP-1374L-1AVDF: 14.780.000 VND - Dây da đen, mặt số thể thao.
+2. Casio AE-1200WHD-1AVDF: 1.506.000 VND - Pin 10 năm, giờ thế giới.
+3. Casio MTP-VT01L-1BUDF: 1.182.000 VND - Thiết kế tối giản, mỏng nhẹ.
 
 Q: Bảo hành của Citizen BM8180?
-A: 5 năm.
+A: 5 năm chính hãng.
 
-Q: Tư vấn đồng hồ Orient?
-A: Orient Bambino FAC00009W0:
-- Giá: 5.800.000 VND
-- Đặc điểm: Automatic, mặt kính cong.
-
-TỪ VỰNG BẮT BUỘC (Tiếng Việt 100%):
-- model -> mẫu
-- feature -> đặc điểm
-- warranty -> bảo hành
-- price -> giá
-- water resistant -> chống nước
-- stainless steel -> thép không gỉ
+TỪ VỰNG BẮT BUỘC (DỊCH NẾU THẤY TIẾNG ANH):
+- Price -> Giá
+- Features -> Đặc điểm
+- Warranty -> Bảo hành
+- Water resistant -> Chống nước
+- Here are -> Dưới đây là
+- The top -> Các mẫu hàng đầu
+- Stock -> Tồn kho
+- VAT -> Thuế GTGT
 
 Context: {context}
 Câu hỏi: {question}
-Trả lời ngắn gọn: [/INST]'''
+Trả lời (Bằng tiếng Việt): [/INST]'''
 
         prompt = PromptTemplate(
             input_variables=["question", "context"],
