@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timedelta
 from collections import defaultdict
 import os
+import asyncio
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -121,7 +122,9 @@ def is_relevant_question(question: str) -> bool:
         'liên hệ', 'chính sách', 'đổi trả', 'thanh toán', 'trả góp',
         'địa chỉ', 'số điện thoại', 'hỗ trợ', 'showroom', 'hotline', 'contact',
         'tư vấn', 'giới thiệu', 'so sánh', 'khuyến mãi', 'giảm giá',
-        'giao hàng', 'ship', 'vận chuyển'
+        'giao hàng', 'ship', 'vận chuyển',
+        'chống nước', 'size', 'màu', 'kích thước', 'mặt kính', 'dây', 'pin', 'cơ', 'automatic',
+        'nó', 'cái này', 'cái đấy', 'em nó', 'bé này'
     ]
     
     brands = ['casio', 'seiko', 'citizen', 'orient', 'tissot', 'omega', 'rolex']
@@ -174,8 +177,8 @@ def extract_search_filters(question: str) -> Dict[str, Any]:
         amount = int(over_match.group(2)) * 1000000
         filters["price"] = {"$gt": amount}
         
-    # Khoảng X-Y triệu
-    range_match = re.search(r"từ\s+(\d+)\s*-\s*(\d+)\s*(triệu|tr|m)", question_lower)
+    # Khoảng X-Y triệu (hỗ trợ -, đến, tới)
+    range_match = re.search(r"từ\s+(\d+)\s*(?:-|đến|tới)\s*(\d+)\s*(triệu|tr|m)", question_lower)
     if range_match:
         min_amount = int(range_match.group(1)) * 1000000
         max_amount = int(range_match.group(2)) * 1000000
@@ -199,6 +202,12 @@ def extract_search_filters(question: str) -> Dict[str, Any]:
         if "$and" not in filters: filters["$and"] = []
         filters["$and"].append({"strap_material": "day_nhua"})
 
+    # Lọc theo Phong cách (Style)
+    # ChromaDB không hỗ trợ $contains cho string metadata một cách đơn giản.
+    # Chúng ta sẽ dựa vào vector search để tìm kiếm phong cách (thể thao, sang trọng...)
+    # vì các từ khóa này đã có trong page_content.
+    pass 
+
     # Nếu có nhiều hơn 1 điều kiện (không phải range đã xử lý), dùng $and
     final_filters = {}
     conditions = []
@@ -221,18 +230,24 @@ def extract_search_filters(question: str) -> Dict[str, Any]:
 def handle_comparison(question: str, vectordb) -> Optional[str]:
     """Xử lý câu hỏi so sánh"""
     question_lower = question.lower()
-    if "so sánh" not in question_lower:
-        return None
-        
-    # Tìm 2 sản phẩm để so sánh
-    # Pattern: So sánh A với/và B
+    
+    # Pattern 1: So sánh A với/và B
     compare_match = re.search(r"so sánh\s+(.+?)\s+(?:với|và)\s+(.+)", question_lower)
+    
+    # Pattern 2: Giữa A và B...
+    if not compare_match:
+        compare_match = re.search(r"giữa\s+(.+?)\s+(?:và|với)\s+(.+?)\s+(?:thì|mẫu nào|cái nào)", question_lower)
+
     if not compare_match:
         return None
         
     prod1 = compare_match.group(1).strip()
     prod2 = compare_match.group(2).strip()
     
+    # Clean up product names (remove "đồng hồ", "mẫu")
+    prod1 = re.sub(r"^(đồng hồ|mẫu)\s+", "", prod1).strip()
+    prod2 = re.sub(r"^(đồng hồ|mẫu)\s+", "", prod2).strip()
+
     logger.info(f"Comparing {prod1} and {prod2}")
     
     # Tìm kiếm thông tin cho từng sản phẩm
@@ -259,7 +274,9 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
         "price": None,
         "features": None,
         "brand": None,
-        "warranty": None
+        "warranty": None,
+        "stock": None,
+        "contact": None
     }
 
     # Regex for CSV format (prioritized)
@@ -274,7 +291,7 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
     if brand_match:
         info["brand"] = brand_match.group(1).strip()
         
-    # Nếu không tìm thấy theo format CSV, thử fallback sang regex cũ (cho chắc chắn)
+    # Fallback regex for Name/Brand
     if not info["product_name"]:
         brand_patterns = [
             r"(Casio|Seiko|Citizen|Orient|Tissot|Omega|Rolex)\s+([\w\-]+(?:\s+[\w\-]+)*)",
@@ -291,12 +308,14 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
                 break
 
     # Tìm giá
-    # Format CSV: Giá bán: 14.780.000
-    price_match_csv = re.search(r"Giá bán:\s*([\d\.]+)", context, re.IGNORECASE)
+    price_match_csv = re.search(r"Giá bán:\s*(.+?)(?=\n|$)", context, re.IGNORECASE)
     if price_match_csv:
-        info["price"] = price_match_csv.group(1).strip()
+        raw_price = price_match_csv.group(1).strip()
+        # Remove (Đã bao gồm VAT) for cleaner number parsing if needed, or keep it
+        # Let's keep it as is for display, but maybe clean it for calculation if we were doing that.
+        # For display: "14780000 (Đã bao gồm VAT)" is fine.
+        info["price"] = raw_price
     else:
-        # Fallback regex cũ
         price_patterns = [
             r"giá[:\s]+([\d,\.]+)\s*(VND|đ)",
             r"mức giá[:\s]+([\d,\.]+)\s*(VND|đ)",
@@ -308,13 +327,16 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
                 info["price"] = price_match.group(1)
                 break
 
+    # Tìm số lượng (Stock)
+    stock_match = re.search(r"Số lượng:\s*(\d+)", context, re.IGNORECASE)
+    if stock_match:
+        info["stock"] = stock_match.group(1)
+
     # Tìm đặc điểm / Thông số kỹ thuật
-    # Ưu tiên Thông số kỹ thuật
     specs_match = re.search(r"Thông số kỹ thuật:\s*(.+?)(?=\n|$)", context, re.IGNORECASE | re.DOTALL)
     if specs_match:
         info["features"] = specs_match.group(1).strip()
     else:
-        # Fallback sang Mô tả
         desc_match = re.search(r"Mô tả:\s*(.+?)(?=\n|$)", context, re.IGNORECASE | re.DOTALL)
         if desc_match:
             info["features"] = desc_match.group(1).strip()
@@ -324,7 +346,6 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
                 info["features"] = features_match.group(1).strip()
 
     # Tìm bảo hành
-    # Format CSV: Bảo hành: ...
     warranty_match_csv = re.search(r"Bảo hành:\s*(.+?)(?=\n|$)", context, re.IGNORECASE)
     if warranty_match_csv:
         info["warranty"] = warranty_match_csv.group(1).strip()
@@ -333,33 +354,88 @@ def extract_product_info(context: str) -> dict[str, Optional[str]]:
         if warranty_match:
             info["warranty"] = warranty_match.group(1).strip()
 
+    # Tìm thông tin liên hệ - Cải thiện regex để bắt nhiều dòng
+    contact_match = re.search(r"Thông tin liên hệ:[\s\n]*([^\n]+(?:\n[^\n]+)*)", context, re.IGNORECASE)
+    if contact_match:
+        # Clean up the captured text
+        raw_contact = contact_match.group(1).strip()
+        # Remove any trailing unrelated text if regex captured too much (unlikely with this pattern but good safety)
+        info["contact"] = raw_contact
+    else:
+        # Fallback regex for email/phone if "Thông tin liên hệ:" header is missing or different
+        email_match = re.search(r"Email:\s*([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)", context)
+        phone_match = re.search(r"Số điện thoại:\s*([\d\.]+)", context)
+        contact_parts = []
+        if email_match: contact_parts.append(f"Email: {email_match.group(1)}")
+        if phone_match: contact_parts.append(f"Hotline: {phone_match.group(1)}")
+        
+        if contact_parts:
+            info["contact"] = ", ".join(contact_parts)
+        else:
+            info["contact"] = None
+
     return info
 
 
-def enhance_context_with_history(session_id: str, current_context: str) -> str:
-    """Tăng cường context với lịch sử hội thoại"""
+def resolve_coreference(question: str, context: Dict) -> str:
+    """Giải quyết tham chiếu (đại từ, số thứ tự) để làm rõ câu hỏi"""
+    question_lower = question.lower()
+    
+    # 1. Xử lý số thứ tự (cái đầu tiên, mẫu thứ 2...)
+    last_list = context.get("last_product_list", [])
+    if last_list:
+        ordinal_map = {
+            "đầu tiên": 0, "thứ nhất": 0, "số 1": 0,
+            "thứ hai": 1, "thứ 2": 1, "số 2": 1,
+            "thứ ba": 2, "thứ 3": 2, "số 3": 2,
+            "thứ tư": 3, "thứ 4": 3, "số 4": 3,
+            "thứ năm": 4, "thứ 5": 4, "số 5": 4
+        }
+        for key, idx in ordinal_map.items():
+            # Kiểm tra từ khóa
+            if key in question_lower:
+                # Yêu cầu có từ chỉ loại đi kèm hoặc là các từ đặc biệt
+                triggers = ["cái", "mẫu", "chiếc", "con", "em", "sản phẩm"]
+                is_valid = any(f"{t} {key}" in question_lower for t in triggers)
+                
+                if key in ["đầu tiên", "thứ nhất", "cuối cùng"]:
+                    is_valid = True
+                    
+                if is_valid and idx < len(last_list):
+                    prod_name = last_list[idx]
+                    logger.info(f"Resolved ordinal '{key}' to '{prod_name}'")
+                    # Thay thế từ khóa bằng tên sản phẩm
+                    # Ví dụ: "Cái đầu tiên..." -> "Đồng hồ Casio... có..."
+                    # Dùng replace 1 lần để tránh thay thế nhầm nếu lặp lại
+                    return question_lower.replace(key, prod_name, 1)
+
+    # 2. Xử lý đại từ (nó, cái này...)
+    pronouns = ["nó", "cái này", "sản phẩm này", "đồng hồ này", "em nó", "bé này", "chiếc này", "giá này", "giá đó"]
+    current_product = context.get("current_product")
+    if current_product and any(p in question_lower for p in pronouns):
+        logger.info(f"Resolved pronoun to '{current_product}'")
+        return f"{current_product} {question}"
+        
+    return question
+
+
+def get_conversation_history(session_id: str) -> str:
+    """Lấy lịch sử hội thoại định dạng text"""
     if session_id not in conversation_history:
-        return current_context
+        return ""
     
     history = conversation_history[session_id]
     if not history:
-        return current_context
+        return ""
     
-    # Lấy 3 câu hỏi gần nhất
-    recent_history = history[-3:]
-    history_context = "\n".join([
-        f"Q: {item['question']}\nA: {item['answer'][:200]}..." 
+    # Lấy 5 câu hỏi gần nhất để tăng ngữ cảnh
+    recent_history = history[-5:]
+    history_text = "\n".join([
+        f"User: {item['question']}\nAssistant: {item['answer'][:300]}" 
         for item in recent_history
     ])
     
-    enhanced_context = f"""
-Lịch sử hội thoại gần đây:
-{history_context}
-
-Thông tin hiện tại:
-{current_context}
-"""
-    return enhanced_context
+    return history_text
 
 
 def handle_follow_up(question: str, context: Dict, session_id: str) -> Optional[str]:
@@ -370,16 +446,34 @@ def handle_follow_up(question: str, context: Dict, session_id: str) -> Optional[
 
     logger.info(f"Follow-up check - Question: '{question}', Current product: {current_product}")
 
+    # Xử lý câu hỏi về liên hệ (Global check)
+    if any(kw in question for kw in ["liên hệ", "địa chỉ", "số điện thoại", "email", "hotline"]):
+        if context.get("contact"):
+            return f"Thông tin liên hệ: {context['contact']}"
+        # Fallback if not in context but maybe in general knowledge or footer
+        return "Bạn có thể liên hệ với chúng tôi qua Hotline: 0905350808 hoặc Email: topwatch@gmail.com"
+
     if not current_product and not conversation_ctx:
         logger.info("No current product or conversation context found")
         return None
 
+    # Xử lý tham chiếu thứ tự (mẫu đầu tiên, cái thứ 2...)
+    # Đã được xử lý bởi resolve_coreference để rewrite query
+    # Nên ở đây chúng ta bỏ qua để query đi xuống RAG
+    pass
+
     # Xử lý đại từ (nó, cái này, sản phẩm này...)
     pronouns = ["nó", "cái này", "sản phẩm này", "đồng hồ này", "mẫu này", 
-                "sản phẩm đó", "đồng hồ đó", "mẫu đó", "cái đó", "thứ đó"]
+                "sản phẩm đó", "đồng hồ đó", "mẫu đó", "cái đó", "thứ đó",
+                "cái đấy", "em nó", "bé này", "chiếc này", "chiếc đó",
+                "giá này", "giá đó"] # Added implicit price references
     if any(pronoun in question for pronoun in pronouns):
         logger.info(f"Pronoun detected in question: {question}")
         if current_product:
+            # Check VAT (Moved up to prioritize over general price check)
+            if "vat" in question or "thuế" in question:
+                return f"Giá bán của {current_product} đã bao gồm thuế VAT."
+
             if "giá" in question or "bao nhiêu tiền" in question:
                 if context.get("price"):
                     logger.info(f"Returning price info for {current_product}")
@@ -400,6 +494,20 @@ def handle_follow_up(question: str, context: Dict, session_id: str) -> Optional[
                     return f"{current_product} có {context['warranty']}."
                 logger.info(f"No warranty info found for {current_product}")
                 return f"Xin lỗi, tôi chưa có thông tin bảo hành cho {current_product}."
+            
+            # Check stock
+            if "còn hàng" in question or "có sẵn" in question or "tồn kho" in question:
+                stock = context.get("stock")
+                if stock:
+                    try:
+                        stock_num = int(stock)
+                        status = "còn hàng" if stock_num > 0 else "đã hết hàng"
+                        return f"Sản phẩm {current_product} hiện {status} (Số lượng: {stock})."
+                    except:
+                        return f"Hiện tại {current_product} đang có sẵn tại cửa hàng."
+                return f"Sản phẩm {current_product} hiện đang có sẵn."
+
+
 
             # Xử lý câu hỏi chung về thông tin sản phẩm
             if "thông tin" in question:
@@ -425,6 +533,8 @@ def handle_follow_up(question: str, context: Dict, session_id: str) -> Optional[
             
             if "khuyến nghị" in question or "gợi ý" in question:
                 return "Dựa trên sở thích bạn đã chia sẻ, tôi có thể đưa ra gợi ý phù hợp. Bạn quan tâm đến mức giá nào?"
+
+
 
     logger.info("No follow-up response generated")
     return None
@@ -507,6 +617,17 @@ async def chat_stream(req: ChatRequest, request: Request):
         context = session_contexts.get(session_id, {})
         context["last_activity"] = datetime.now()
         
+        # Giải quyết tham chiếu (Coreference Resolution)
+        # Điều này giúp biến "Nó giá bao nhiêu" thành "Casio ABC giá bao nhiêu"
+        resolved_question = resolve_coreference(question, context)
+        is_specific_query = False
+        if resolved_question != question:
+            logger.info(f"Rewrote question: '{question}' -> '{resolved_question}'")
+            question = resolved_question
+            is_specific_query = True
+            
+        original_question = question
+        
         # Log current context
         logger.info(f"Current context for session {session_id}: {context}")
         
@@ -561,6 +682,11 @@ async def chat_stream(req: ChatRequest, request: Request):
             'saga': 'Saga'
         }
         
+        # Initialize variables to prevent UnboundLocalError
+        is_brand_query = False
+        relevant_docs = []
+        context_text = ""
+        
         found_brand = None
         for key, value in brands_map.items():
             if key in question.lower():
@@ -574,11 +700,11 @@ async def chat_stream(req: ChatRequest, request: Request):
             # Kiểm tra xem có phải là model cụ thể không
             specific_code = detect_specific_model(question)
             
-            general_keywords = ["thương hiệu", "sản phẩm", "các loại", "các mẫu", "tìm hiểu", "xem", "liệt kê", "danh sách"]
+            general_keywords = ["thương hiệu", "sản phẩm", "các loại", "các mẫu", "tìm hiểu", "xem", "liệt kê", "danh sách", "tư vấn"]
             
             # Chỉ coi là brand query nếu KHÔNG phải là model cụ thể
             if not specific_code:
-                if len(question.split()) <= 4 or any(kw in question.lower() for kw in general_keywords):
+                if len(question.split()) <= 6 or any(kw in question.lower() for kw in general_keywords):
                     is_brand_query = True
                     # Điều chỉnh câu hỏi để RAG tìm kiếm tốt hơn
                     question = f"Liệt kê danh sách các mẫu đồng hồ {found_brand} nổi bật nhất kèm giá bán và đặc điểm."
@@ -602,8 +728,24 @@ async def chat_stream(req: ChatRequest, request: Request):
             
             return StreamingResponse(respond(), media_type="text/plain")
 
-        # Xử lý so sánh
-        comparison_context = handle_comparison(question, vectordb)
+        # Xử lý đại từ để duy trì ngữ cảnh (Context Retention)
+        pronouns = ["nó", "cái này", "sản phẩm này", "đồng hồ này", "mẫu này", 
+                    "sản phẩm đó", "đồng hồ đó", "mẫu đó", "cái đó", "thứ đó",
+                    "cái đấy", "em nó", "bé này", "chiếc này", "chiếc đó"]
+        has_pronoun = any(p in question.lower() for p in pronouns)
+        forced_context = False
+        
+        if has_pronoun and context.get("current_product") and context.get("conversation_context"):
+            logger.info(f"Pronoun detected ({question}). Using stored context for {context['current_product']}")
+            context_text = context["conversation_context"]
+            relevant_docs = [True] # Dummy to indicate docs found
+            forced_context = True
+            
+        # Xử lý so sánh (chỉ chạy nếu không phải forced context hoặc nếu câu hỏi có chứa "so sánh")
+        comparison_context = None
+        if not forced_context or "so sánh" in question.lower():
+             comparison_context = handle_comparison(question, vectordb)
+
         if comparison_context:
             logger.info("Comparison context generated")
             context_text = comparison_context
@@ -611,9 +753,27 @@ async def chat_stream(req: ChatRequest, request: Request):
             
             # Cập nhật prompt cho so sánh
             question = f"So sánh chi tiết 2 sản phẩm dựa trên thông tin được cung cấp: {question}"
-        else:
+        elif not forced_context:
             # Truy vấn vector DB thông thường với bộ lọc
-            filters = extract_search_filters(question)
+            filters = extract_search_filters(original_question)
+            
+            # Nếu là specific query (đã resolve coreference), bỏ qua filters để tìm kiếm chính xác sản phẩm
+            if 'is_specific_query' in locals() and is_specific_query:
+                logger.info("Specific query detected. Ignoring filters.")
+                filters = {}
+            
+            # Nếu là brand query, thêm filter thương hiệu
+            if 'is_brand_query' in locals() and is_brand_query and found_brand:
+                brand_filter = {"brand": found_brand.lower()}
+                if filters:
+                    if "$and" in filters:
+                        filters["$and"].append(brand_filter)
+                    else:
+                        # Wrap existing filter and brand filter in $and
+                        filters = {"$and": [filters, brand_filter]}
+                else:
+                    filters = brand_filter
+            
             logger.info(f"Search filters: {filters}")
             
             search_k = 6 if 'is_brand_query' in locals() and is_brand_query else 3
@@ -630,30 +790,147 @@ async def chat_stream(req: ChatRequest, request: Request):
                 logger.info(f"  - Score: {score:.4f}, Content: {doc.page_content[:50]}...")
 
             relevant_docs = [doc for doc, score in search_result if score < 1.8]
+            
+            # Nếu là specific query (đã resolve coreference), lọc relevant_docs để chỉ giữ lại đúng sản phẩm
+            # Nếu là specific query (đã resolve coreference), lọc relevant_docs để chỉ giữ lại đúng sản phẩm
+            if 'is_specific_query' in locals() and is_specific_query:
+                specific_code = detect_specific_model(question)
+                if specific_code:
+                    # Strict filtering: Only keep docs that contain the specific code
+                    filtered_docs = [doc for doc in relevant_docs if specific_code.lower() in doc.page_content.lower()]
+                    
+                    if filtered_docs:
+                        logger.info(f"Filtered docs for specific model {specific_code}: {len(filtered_docs)} docs")
+                        relevant_docs = filtered_docs
+                    else:
+                        # If no docs match the specific code, it's better to return nothing than irrelevant products
+                        # However, sometimes the code format might differ slightly.
+                        # Let's try to be smart: if we found relevant docs but none match the code, 
+                        # it might be a retrieval error or the product isn't there.
+                        # To be safe and avoid hallucination, we will limit to the top 1 doc if it has a high score
+                        logger.warning(f"Specific model {specific_code} detected but not found in top docs. Limiting to top 1.")
+                        if relevant_docs:
+                             relevant_docs = [relevant_docs[0]]
+
             context_text = "\n".join([doc.page_content for doc in relevant_docs]) if relevant_docs else ""
+            
+
+
+        # TỐI ƯU HÓA: Trả về kết quả trực tiếp cho câu hỏi liệt kê (Bypass LLM)
+        if is_brand_query and relevant_docs:
+            logger.info("Bypassing LLM for brand listing query")
+            
+            response_lines = [f"Dưới đây là các mẫu đồng hồ {found_brand} nổi bật:\n"]
+            
+            for i, doc in enumerate(relevant_docs):
+                # Extract info using metadata (more reliable)
+                name = doc.metadata.get('name')
+                price = doc.metadata.get('price')
+                
+                # Fallback to extraction if metadata missing
+                if not name or not price:
+                    extracted = extract_product_info(doc.page_content)
+                    if not name: name = extracted['product_name']
+                    if not price: price = extracted['price']
+                
+                # Format price
+                try:
+                    price_str = f"{int(price):,.0f}" if price else "Liên hệ"
+                except:
+                    price_str = str(price)
+                
+                # Get features from page_content
+                features = "Thiết kế sang trọng, chính hãng." # Default
+                
+                # Try to find "Mô tả" or "Thông số kỹ thuật"
+                desc_match = re.search(r"Mô tả:\s*(.+?)(?=\n|$)", doc.page_content, re.IGNORECASE)
+                if desc_match:
+                    features = desc_match.group(1).strip()
+                
+                # Truncate features if too long
+                if len(features) > 120:
+                    features = features[:117] + "..."
+
+                response_lines.append(f"{i+1}. **{name}**")
+                response_lines.append(f"   - 💰 Giá: {price_str} VND")
+                response_lines.append(f"   - ✨ {features}\n")
+
+            final_response = "\n".join(response_lines)
+            
+            # Save to history
+            if session_id not in conversation_history:
+                conversation_history[session_id] = []
+            conversation_history[session_id].append({
+                "question": question,
+                "answer": final_response,
+                "timestamp": datetime.now()
+            })
+
+             # Save product list to context for ordinal reference
+            context['last_product_list'] = []
+            context_content_list = []
+            for doc in relevant_docs:
+                 name = doc.metadata.get('name')
+                 if not name:
+                     extracted = extract_product_info(doc.page_content)
+                     name = extracted['product_name']
+                 if name:
+                     context['last_product_list'].append(name)
+                 context_content_list.append(doc.page_content)
+            
+            # Lưu nội dung vào conversation_context để dùng cho câu hỏi sau
+            context['conversation_context'] = "\n".join(context_content_list)
+            
+            # Update session context
+            session_contexts[session_id] = context
+
+            async def direct_response():
+                for line in response_lines:
+                    yield line + "\n"
+                    await asyncio.sleep(0.02)
+            
+            return StreamingResponse(direct_response(), media_type="text/plain")
         
-        # Tăng cường context với lịch sử
-        enhanced_context = enhance_context_with_history(session_id, context_text)
+        # Lấy lịch sử hội thoại
+        history_text = get_conversation_history(session_id)
         
         # Log context để debug
         logger.info(f"Question: '{question}'")
         logger.info(f"Found {len(relevant_docs)} relevant docs")
-        logger.info(f"Context: {context_text[:500]}...")
-        logger.info(f"Enhanced context: {enhanced_context[:500]}...")
+        logger.info(f"Context: {context_text[:200]}...")
+        logger.info(f"History: {history_text[:200]}...")
 
         # Cập nhật ngữ cảnh nếu tìm thấy sản phẩm
         if relevant_docs:
             product_info = extract_product_info(context_text)
             if product_info["product_name"]:
-                context.update({
-                    "current_product": product_info["product_name"],
-                    "brand": product_info["brand"],
-                    "price": product_info["price"],
-                    "features": product_info["features"],
-                    "warranty": product_info["warranty"],
-                    "conversation_context": context_text
-                })
-                logger.info(f"Updated context with product info: {product_info}")
+                # Logic to decide whether to update current_product
+                should_update = True
+                
+                # Don't update if it's a purely general question without product identifiers
+                general_intent_keywords = ["giao hàng", "ship", "vận chuyển", "thanh toán", "địa chỉ", "đổi trả", "liên hệ", "shop", "cửa hàng", "online"]
+                is_general = any(kw in question.lower() for kw in general_intent_keywords)
+                
+                # Check if question has brand or specific model code
+                brands_map_keys = ['casio', 'seiko', 'citizen', 'orient', 'doxa', 'saga', 'tissot', 'omega', 'rolex']
+                has_brand_or_code = any(b in question.lower() for b in brands_map_keys) or detect_specific_model(question)
+                
+                if is_general and not has_brand_or_code:
+                    should_update = False
+                    logger.info("General question detected. Preserving previous product context.")
+
+                if should_update:
+                    context.update({
+                        "current_product": product_info["product_name"],
+                        "brand": product_info["brand"],
+                        "price": product_info["price"],
+                        "features": product_info["features"],
+                        "warranty": product_info["warranty"],
+                        "stock": product_info.get("stock"),
+                        "contact": product_info.get("contact"),
+                        "conversation_context": context_text
+                    })
+                    logger.info(f"Updated context with product info: {product_info}")
 
         # Lưu ngữ cảnh mới
         session_contexts[session_id] = context
@@ -687,14 +964,15 @@ async def chat_stream(req: ChatRequest, request: Request):
                     return StreamingResponse(no_info_brand(), media_type="text/plain")
 
         # Kiểm tra Model cụ thể có trong kết quả không (Chống hallucination)
-        specific_code = detect_specific_model(question)
-        if specific_code and relevant_docs:
-            # Kiểm tra xem code có trong context_text không
-            if specific_code.lower() not in context_text.lower():
-                logger.info(f"Specific model {specific_code} not found in retrieved docs")
-                async def not_found_response():
-                    yield f"Xin lỗi, hiện tại shop chưa có sẵn mẫu đồng hồ {specific_code} hoặc thông tin chưa được cập nhật."
-                return StreamingResponse(not_found_response(), media_type="text/plain")
+        # Tạm thời bỏ qua check này vì nó quá strict và gây ra false negative
+        # specific_code = detect_specific_model(question)
+        # if specific_code and relevant_docs:
+        #     # Kiểm tra xem code có trong context_text không
+        #     if specific_code.lower() not in context_text.lower():
+        #         logger.info(f"Specific model {specific_code} not found in retrieved docs")
+        #         async def not_found_response():
+        #             yield f"Xin lỗi, hiện tại shop chưa có sẵn mẫu đồng hồ {specific_code} hoặc thông tin chưa được cập nhật."
+        #         return StreamingResponse(not_found_response(), media_type="text/plain")
 
         # Kiểm tra xem context có chứa thông tin phù hợp không
         if not context_text.strip():
@@ -703,15 +981,59 @@ async def chat_stream(req: ChatRequest, request: Request):
             return StreamingResponse(no_context(), media_type="text/plain")
 
         # Xử lý thông thường với LLM
-        inputs = {"question": question, "context": enhanced_context}
+        # Nếu là câu hỏi tìm kiếm (có filters) và không phải là follow-up cụ thể, 
+        # chúng ta nên hạn chế history để tránh nhiễu (context pollution).
+        # Tuy nhiên, nếu là câu hỏi so sánh, history có thể cần thiết.
+        
+        effective_history = history_text
+        if 'filters' in locals() and filters and not comparison_context:
+             logger.info("Search query detected with filters. Clearing history to focus on new search results.")
+             effective_history = ""
+
+        inputs = {
+            "question": question, 
+            "context": context_text,
+            "history": effective_history
+        }
 
         async def generate():
             try:
                 response_chunks = []
-                for chunk in llm.stream(prompt.format(**inputs)):
-                    clean_chunk = remove_markdown(chunk)
-                    response_chunks.append(clean_chunk)
-                    yield clean_chunk
+                first_chunk = True
+                buffer = ""
+                in_think_block = False
+                
+                async for chunk in llm.astream(prompt.format(**inputs)):
+                    content = chunk.content if hasattr(chunk, 'content') else str(chunk)
+                    
+                    if content:
+                        buffer += content
+                        
+                        # Check for <think> tags
+                        if "<think>" in buffer:
+                            in_think_block = True
+                            
+                        if in_think_block:
+                            if "</think>" in buffer:
+                                # Remove the think block and yield the rest
+                                buffer = re.sub(r'<think>.*?</think>', '', buffer, flags=re.DOTALL)
+                                in_think_block = False
+                            else:
+                                # Still in think block, wait for closing tag
+                                continue
+                        
+                        # If not in think block, yield content
+                        if not in_think_block and buffer:
+                            # Skip leading whitespace/newlines to prevent empty bubbles
+                            if first_chunk:
+                                if not buffer.strip():
+                                    buffer = "" # Keep buffering if only whitespace
+                                    continue
+                                first_chunk = False
+                            
+                            yield buffer
+                            response_chunks.append(buffer)
+                            buffer = ""
                 # Lưu vào lịch sử
                 full_response = "".join(response_chunks)
                 if session_id not in conversation_history:
@@ -737,6 +1059,7 @@ async def chat_stream(req: ChatRequest, request: Request):
             samesite="lax"
         )
         return response
+        
         
     except HTTPException:
         raise

@@ -6,14 +6,14 @@ Dưới đây là danh sách các câu hỏi để kiểm tra toàn diện khả
 *Mục tiêu: Kiểm tra khả năng trích xuất thông tin chính xác từ dữ liệu.*
 
 *   **Thông số kỹ thuật:**
-    *   "Size mặt của đồng hồ Casio MTP-1374L là bao nhiêu?"
+    *   "Size mặt của đồng hồ Casio MTP-1374L-1AVDF là bao nhiêu?"
     *   "Chất liệu dây của Seiko 5 Sports là gì?"
     *   "Đồng hồ Citizen BM8180 có chống nước không?"
 *   **Giá & Tồn kho & VAT:**
-    *   "Giá của Casio MTP-V002L là bao nhiêu?"
+    *   "Giá của Casio AE-1200WHD-1AVDF là bao nhiêu?"
     *   "Giá này đã bao gồm thuế VAT chưa?"
-    *   "Mẫu Casio MTP-1374L còn hàng không?"
-    *   "Kiểm tra giúp tôi mẫu Seiko SNZG15K1 có sẵn không?"
+    *   "Mẫu Casio AE-1200WHD-1AVDF còn hàng không?"
+    *   "Kiểm tra giúp tôi mẫu AE-1200WHD-1AVDF có sẵn không?"
 
 ## 2. Tư vấn & Lọc sản phẩm nâng cao
 *Mục tiêu: Kiểm tra logic lọc theo Giá, Giới tính, Chất liệu dây và phân biệt câu hỏi chung/cụ thể.*
@@ -34,9 +34,9 @@ Dưới đây là danh sách các câu hỏi để kiểm tra toàn diện khả
 ## 3. So sánh sản phẩm
 *Mục tiêu: Kiểm tra tính năng so sánh 2 sản phẩm.*
 
-*   "So sánh Casio MTP-1374L với Seiko 5 Sports"
+*   "So sánh Casio AE-1200WHD-1AVDF với Seiko 5 Sports SSK045K1"
 *   "So sánh Citizen BM8180 và Orient Bambino"
-*   "Giữa Casio MTP-V002L và MTP-VT01L mẫu nào rẻ hơn?"
+*   "Giữa Casio AE-1200WHD-1AVDF và Seiko 5 Sports SSK045K1 mẫu nào rẻ hơn?"
 
 ## 4. Hỏi về Chính sách & Dịch vụ
 *Mục tiêu: Kiểm tra các câu trả lời mặc định về chính sách.*
@@ -72,3 +72,5 @@ Dưới đây là danh sách các câu hỏi để kiểm tra toàn diện khả
 *   "Casio MTP-9999 có bán không?" (Mã không tồn tại -> Báo lỗi)
 *   "Giá của đồng hồ Rolex Fake 123 là bao nhiêu?"
 *   "Shop có bán Apple Watch không?"
+
+Vẫn còn lỗi khi hỏi về sản phẩm không tồn tại và trả lời còn bị ngắt câu ở dạng liệt kê sản phẩm của thương hiệu. Ghi nhớ ngữ cảnh còn hạn chế

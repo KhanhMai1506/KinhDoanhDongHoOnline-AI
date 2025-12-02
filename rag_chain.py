@@ -4,15 +4,18 @@ from langchain_community.document_loaders import CSVLoader
 from langchain_core.documents import Document
 import csv
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import OllamaLLM
+from langchain_ollama import ChatOllama
+from langchain_core.prompts import PromptTemplate
+from langchain_core.documents import Document
 import re
 import logging
 import os
 from typing import Dict, Any
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
+ 
 
 def create_qa_chain():
     """Tạo QA chain với cải tiến toàn diện"""
@@ -51,11 +54,11 @@ def create_qa_chain():
                 if 'thể thao' in other_info: style.append('the_thao')
                 if 'cổ điển' in other_info or 'classic' in other_info: style.append('co_dien')
                 if 'sang trọng' in other_info: style.append('sang_trong')
-                if 'tối giản' in other_info: style.append('toi_gian')
+                if 'thanh lịch' in other_info: style.append('thanh_lich')
                 
                 purpose = []
                 if 'đi làm' in other_info or 'văn phòng' in other_info: purpose.append('di_lam')
-                if 'đi học' in other_info: purpose.append('di_hoc')
+                if 'đi date' in other_info: purpose.append('di_date')
                 if 'đi chơi' in other_info: purpose.append('di_choi')
                 if 'đi tiệc' in other_info: purpose.append('di_tiec')
 
@@ -123,77 +126,46 @@ def create_qa_chain():
                 persist_directory=persist_directory
             )
 
+
+
         # 4. Prompt template tối ưu với context memory
-        template = '''[INST]
-Bạn là trợ lý tư vấn đồng hồ chuyên nghiệp.
-MỤC TIÊU: Trả lời CỰC KỲ NGẮN GỌN, SÚC TÍCH và ĐI THẲNG VÀO VẤN ĐỀ.
-NGÔN NGỮ: BẮT BUỘC TRẢ LỜI 100% BẰNG TIẾNG VIỆT. KHÔNG DÙNG TIẾNG ANH.
+        system_template = """Bạn là trợ lý tư vấn đồng hồ chuyên nghiệp.
+NHIỆM VỤ: Trả lời câu hỏi dựa trên thông tin sản phẩm và lịch sử trò chuyện.
 
-QUY TẮC CỐT LÕI:
-1. KHÔNG chào hỏi rườm rà.
-2. KHÔNG lặp lại câu hỏi.
-3. KHÔNG DỊCH thông tin từ Context sang tiếng Anh. Giữ nguyên văn tiếng Việt trong Context.
-4. Nếu liệt kê sản phẩm, BẮT BUỘC dùng định dạng sau cho từng dòng:
-   - [Tên sản phẩm]: [Giá tiền] - [Đặc điểm nổi bật (Tiếng Việt)]
+YÊU CẦU QUAN TRỌNG:
+1. Trả lời đầy đủ nhưng ngắn gọn (tối đa 3-4 câu).
+2. Đi thẳng vào vấn đề, không vòng vo.
+3. Nếu không có thông tin, nói "Tôi chưa có thông tin này".
+4. TUYỆT ĐỐI không bịa thông tin, chỉ trả lời câu được hỏi. Nếu không có dữ liệu trả lời, trả lời "Tôi chưa có thông tin này".
+5. Trả lời theo tiếng Việt 100%.
+6. Nếu câu hỏi là tìm kiếm hoặc tư vấn (ví dụ: "tư vấn", "tìm", "có mẫu nào"), hãy giới thiệu ngắn gọn các sản phẩm phù hợp có trong THÔNG TIN SẢN PHẨM.
+7. CHỈ trả lời về sản phẩm được hỏi. TUYỆT ĐỐI KHÔNG tự ý liệt kê sản phẩm khác nếu không được yêu cầu (trừ khi là câu hỏi tư vấn/tìm kiếm).
+8. TUYỆT ĐỐI KHÔNG ngắt quãng câu trả lời bằng dấu ba chấm (...). Phải trả lời trọn vẹn câu.
+9. Nếu thông tin quá dài, hãy tóm tắt lại nhưng vẫn phải đủ ý và trọn vẹn câu.
 
-QUY TẮC TRẢ LỜI CÂU HỎI CỤ THỂ (ƯU TIÊN CAO NHẤT):
-- Nếu hỏi GIÁ -> CHỈ trả lời giá tiền (Ví dụ: 1.500.000 VND). Giá đã bao gồm VAT.
-- Nếu hỏi CÒN HÀNG KHÔNG -> Kiểm tra "Số lượng". Nếu > 0 trả lời "Còn hàng", ngược lại "Hết hàng".
-- Nếu hỏi ĐẶC ĐIỂM/TÍNH NĂNG -> Sử dụng thông tin từ "Thông số kỹ thuật" hoặc "Mô tả".
-- Nếu hỏi SIZE/KÍCH THƯỚC -> Tìm thông tin "Size mặt" trong "Thông số kỹ thuật".
-- Nếu hỏi CHẤT LIỆU DÂY/KÍNH -> Tìm trong "Thông số kỹ thuật".
-- Nếu hỏi BẢO HÀNH -> Sử dụng thông tin từ "Bảo hành".
-- Nếu hỏi THANH TOÁN -> Sử dụng thông tin từ "Phương thức thanh toán".
-- Nếu hỏi ĐỔI TRẢ -> Sử dụng thông tin từ "Điều kiện đổi trả".
-- Nếu hỏi Giao Hàng -> Sử dụng thông tin từ "Giao hàng".
-- KHÔNG cung cấp thông tin thừa.
+LỊCH SỬ TRÒ CHUYỆN:
+{history}
 
-VÍ DỤ CHUẨN:
-Q: Casio MTP-V002L giá bao nhiêu?
-A: 1.200.000 VND (Đã gồm VAT).
+THÔNG TIN SẢN PHẨM:
+{context}"""
 
-Q: Mẫu này còn hàng không?
-A: Còn hàng (Số lượng: 45).
+        human_template = "{question}"
 
-Q: Size mặt bao nhiêu?
-A: 40mm.
+        prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(system_template),
+            HumanMessagePromptTemplate.from_template(human_template)
+        ])
 
-Q: Liệt kê các mẫu đồng hồ Casio?
-A: Dưới đây là các mẫu Casio nổi bật:
-1. Casio MTP-1374L-1AVDF: 14.780.000 VND - Dây da đen, mặt số thể thao.
-2. Casio AE-1200WHD-1AVDF: 1.506.000 VND - Pin 10 năm, giờ thế giới.
-3. Casio MTP-VT01L-1BUDF: 1.182.000 VND - Thiết kế tối giản, mỏng nhẹ.
-
-Q: Bảo hành của Citizen BM8180?
-A: 5 năm chính hãng.
-
-TỪ VỰNG BẮT BUỘC (DỊCH NẾU THẤY TIẾNG ANH):
-- Price -> Giá
-- Features -> Đặc điểm
-- Warranty -> Bảo hành
-- Water resistant -> Chống nước
-- Here are -> Dưới đây là
-- The top -> Các mẫu hàng đầu
-- Stock -> Tồn kho
-- VAT -> Thuế GTGT
-
-Context: {context}
-Câu hỏi: {question}
-Trả lời (Bằng tiếng Việt): [/INST]'''
-
-        prompt = PromptTemplate(
-            input_variables=["question", "context"],
-            template=template
-        )
-
-        # 5. Cấu hình LLM với tối ưu hóa
+        # 5. Cấu hình LLM với tối ưu hóa tốc độ
         logger.info("Initializing LLM")
-        llm = OllamaLLM(
+        llm = ChatOllama(
             model=os.getenv("OLLAMA_MODEL", "llama3"),
-            temperature=float(os.getenv("LLM_TEMPERATURE", "0.2")),
-            top_k=int(os.getenv("LLM_TOP_K", "40")),
-            repeat_penalty=float(os.getenv("LLM_REPEAT_PENALTY", "1.2")),
-            num_ctx=int(os.getenv("LLM_NUM_CTX", "4096"))
+            temperature=float(os.getenv("LLM_TEMPERATURE", "0.1")),
+            top_k=int(os.getenv("LLM_TOP_K", "10")), 
+            repeat_penalty=float(os.getenv("LLM_REPEAT_PENALTY", "1.1")),
+            num_ctx=int(os.getenv("LLM_NUM_CTX", "2048")), 
+            num_predict=1024, # Tăng giới hạn để không bị ngắt quãng
+            streaming=True,
         )
 
         logger.info("QA chain initialized successfully")
